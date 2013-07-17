@@ -58,246 +58,6 @@ boolean started = false;
 
 Ship myShip;
 
-class ImageInfo{
-	
-	int[] startCoordinate, size;
-	int radius, lifespan;
-	boolean animated;
-	
-	ImageInfo(int[] startCoordinate, int[] size, int radius, int lifespan, boolean animated){
-    	this.startCoordinate = startCoordinate;
-    	this.size = size;
-    	this.radius = radius;
-    	this.lifespan = lifespan;           
-    	this.animated = animated;
-    }
-    int[] getStartCoordinate(){
-        return this.startCoordinate;
-    }
-    int[] getSize(){
-        return this.size;
-    }
-    int getRadius(){
-        return this.radius;
-    }
-    int getLifespan(){
-        return this.lifespan;
-    }
-    boolean getAnimated(){
-        return this.animated;
-    }
-}
-
-
-//helper functions to handle transformations
-float[] angleToVector(float ang){
-    return new float[]{cos(ang), sin(ang)};
-}
-
-
-//Ship class
-class Ship extends Sprite{
-  
-  int[] imageStartCoordinate, shipSize;
-  int radius;
-  float[] pos, vel;
-  float angleVel, angle;
-  boolean thrust;
-  PImage shipImage;
-  ImageInfo info;
-  
-  Ship(float[] pos, float[] vel, float angle, PImage image, ImageInfo info){
-    super(pos, vel, angle, 0, image, info);
-    this.pos = pos;
-    this.vel = vel;
-    this.thrust = false;
-    this.angle = angle;
-    this.angleVel = 0;
-    this.shipImage = image;
-    this.imageStartCoordinate = info.getStartCoordinate();
-    this.shipSize = info.getSize();
-    this.radius = info.getRadius();      
-  }
-  
-  float[] getPosition(){
-    return this.pos;
-  }
-  void setPosition(float[] pos){
-    this.pos = pos;
-  }
-  void setVel(float[] vel){
-    this.vel = vel;
-  }
-  void setAngle(float angle){
-    this.angle = angle;
-  }
-  int getRadius(){
-    return this.radius;    
-  }
-   
-  void draw(){
-    
-    imageMode(CENTER);
-    pushMatrix();
-    
-    translate(pos[0], pos[1]);
-    rotate(this.angle);
-      
-    if(this.thrust){      
-      image(this.shipImage.get(this.shipImage.width / 2, 0, this.shipImage.width / 2, this.shipImage.height), 0, 0);
-    }else{
-      image(this.shipImage.get(0, 0, this.shipImage.width / 2, this.shipImage.height), 0, 0);      
-    }
-    
-    popMatrix();
-    imageMode(CORNER);
-  }
-  
-  
-  boolean update(){
-        
-    //Position Update
-    this.pos[0] = (this.pos[0] + this.vel[0] + width) % width;
-    this.pos[1] = (this.pos[1] + this.vel[1] + height) % height;
-     
-    //Angle Update
-    this.angle += this.angleVel;
-     
-    //Velocity Update - Acceleration in direction of forward vector
-    float[] forwardVector = angleToVector(this.angle);
-    if(this.thrust){
-      this.vel[0] += forwardVector[0] * VEL_CONSTANT;
-      this.vel[1] += forwardVector[1] * VEL_CONSTANT;
-    }      
-    //Friction Update
-    this.vel[0] *= (1 - FRICTION_CONSTANT);
-    this.vel[1] *= (1 - FRICTION_CONSTANT);
-
-    return true;    
-  }
-   
-  void incAngularVel(){
-    this.angleVel += ANGULAR_VEL_OFFSET;
-  }
-
-  void decAngularVel(){
-    this.angleVel -= ANGULAR_VEL_OFFSET;
-  }
-  
-  void setThrust(boolean thrust){
-    this.thrust = thrust;
-  
-    if(this.thrust){
-      thrustSound.play();
-    }else{
-      thrustSound.stop();
-    }
-  }   
-  
-  
-  void shoot(){
-    
-    float[] forward = angleToVector(this.angle);
-    float[] missilePos = new float[]{this.pos[0] + this.radius * forward[0], this.pos[1] + this.radius * forward[1]};
-    float[] missileVel = new float[]{this.vel[0] + MISSILE_VEL_CONSTANT * forward[0], this.vel[1] + MISSILE_VEL_CONSTANT * forward[1]};       
-        
-    missileGroup.add(new Sprite(missilePos, missileVel, this.angle, (float)0, missileImage, missileInfo, missilePlayer));
-
-  }
-
-}
-
-//Sprite class
-class Sprite{
-  
-  int[] startCoordinate, imageSize;
-  int radius, lifespan, age;
-  float[] pos, vel;
-  float angleVel, angle;
-  boolean animated;
-  PImage image;
-  
-  Sprite(float[] pos, float[] vel, float angle, float angleVel, PImage image, ImageInfo info, AudioPlayer sound){
-    this.pos = pos;
-    this.vel = vel;
-    this.angle = angle;
-    this.angleVel = angleVel;
-    this.image = image;
-    this.startCoordinate = info.getStartCoordinate();
-    this.imageSize = info.getSize();
-    this.radius = info.getRadius();
-    this.lifespan = info.getLifespan();
-    this.animated = info.getAnimated();
-    this.age = 0;
-    if(sound != null){
-      sound.cue(0);
-      sound.play();
-    }
-  }
-  
-  Sprite(float[] pos, float[] vel, float angle, float angleVel, PImage image, ImageInfo info){
-    this(pos, vel, angle, angleVel, image, info, null);
-  }
-  
-    
-  float[] getPosition(){
-    return this.pos;
-  }
-
-  int getRadius(){
-    return this.radius; 
-  }   
-
-  void draw(){
-    if(this.animated){
-
-      int[] explosionIndex = new int[]{this.age % EXPLOSION_DIM[0], ((int)(this.age / EXPLOSION_DIM[0])) % EXPLOSION_DIM[1]};      
-      int[] explostionImageFragment = new int[]{explosionIndex[0] * EXPLOSION_SIZE[0], 0};
-      imageMode(CENTER);
-      image(explosionImage.get(explostionImageFragment[0], explostionImageFragment[1], EXPLOSION_SIZE[0], EXPLOSION_SIZE[1]), this.pos[0], this.pos[1]);
-      imageMode(CORNER);
-      
-    }else{
-      
-      imageMode(CENTER); 
-      pushMatrix();
-      translate(pos[0], pos[1]);
-      rotate(this.angle);
-      image(this.image, 0, 0);
-      popMatrix();
-      imageMode(CORNER); 
-    }
-  }
-  
-  
-  boolean update(){       
-      //Position Update
-      this.pos[0] = (this.pos[0] + this.vel[0]) % width;
-      this.pos[1] = (this.pos[1] + this.vel[1]) % height;
-   
-      //Angle Update
-      this.angle += this.angleVel;     
-      
-      //Age Update
-      this.age += 1;
-      if(this.age >= this.lifespan)
-          return true;
-      else
-          return false;
-  }
-  boolean collide(Sprite otherObject){
-      float[] thisPos = this.getPosition();
-      float[] otherPos = otherObject.getPosition();
-      double distance = calculateDistance(thisPos, otherPos);
-      
-      if(distance < this.getRadius() + otherObject.getRadius())
-          return true;
-      else
-          return false;
-  }
-}
-
-
 void setup() {
  
   size(WIDTH, HEIGHT);
@@ -510,24 +270,6 @@ void rockSpawner(){
 
 }
 
-
-//void processSpriteGroup(Set<Sprite> group){
-//  
-//  Collection<Sprite> removeCandidates = new LinkedList<Sprite>();
-//
-//  for(Iterator<Sprite> iterator = group.iterator(); iterator.hasNext();){
-//    Sprite sprite = iterator.next();
-//    if (sprite.update())
-//         removeCandidates.add(sprite);
-//    sprite.draw();
-//  }
-//  group.removeAll(removeCandidates);
-//  
-//}
-
-
-
-
 void processSpriteGroup(Set<Sprite> group){  
   
   for (Iterator<Sprite> iterator = group.iterator(); iterator.hasNext();) {
@@ -569,8 +311,245 @@ int groupGroupCollide(Set<Sprite> groupOne, Set<Sprite> groupTwo){
   return collisionCount;
 }
 
+//helper functions to handle transformations
+float[] angleToVector(float ang){
+    return new float[]{cos(ang), sin(ang)};
+}
+
 double calculateDistance(float[] posOne, float[] posTwo){
     return Math.sqrt(Math.pow((posOne[0] - posTwo[0]), 2) + Math.pow((posOne[1] - posTwo[1]), 2));
+}
+
+class ImageInfo{
+  
+  int[] startCoordinate, size;
+  int radius, lifespan;
+  boolean animated;
+  
+  ImageInfo(int[] startCoordinate, int[] size, int radius, int lifespan, boolean animated){
+      this.startCoordinate = startCoordinate;
+      this.size = size;
+      this.radius = radius;
+      this.lifespan = lifespan;           
+      this.animated = animated;
+    }
+    int[] getStartCoordinate(){
+        return this.startCoordinate;
+    }
+    int[] getSize(){
+        return this.size;
+    }
+    int getRadius(){
+        return this.radius;
+    }
+    int getLifespan(){
+        return this.lifespan;
+    }
+    boolean getAnimated(){
+        return this.animated;
+    }
+}
+
+//Ship class
+class Ship extends Sprite{
+  
+  int[] imageStartCoordinate, shipSize;
+  int radius;
+  float[] pos, vel;
+  float angleVel, angle;
+  boolean thrust;
+  PImage shipImage;
+  ImageInfo info;
+  
+  Ship(float[] pos, float[] vel, float angle, PImage image, ImageInfo info){
+    super(pos, vel, angle, 0, image, info);
+    this.pos = pos;
+    this.vel = vel;
+    this.thrust = false;
+    this.angle = angle;
+    this.angleVel = 0;
+    this.shipImage = image;
+    this.imageStartCoordinate = info.getStartCoordinate();
+    this.shipSize = info.getSize();
+    this.radius = info.getRadius();      
+  }
+  
+  float[] getPosition(){
+    return this.pos;
+  }
+  void setPosition(float[] pos){
+    this.pos = pos;
+  }
+  void setVel(float[] vel){
+    this.vel = vel;
+  }
+  void setAngle(float angle){
+    this.angle = angle;
+  }
+  int getRadius(){
+    return this.radius;    
+  }
+   
+  void draw(){
+    
+    imageMode(CENTER);
+    pushMatrix();
+    
+    translate(pos[0], pos[1]);
+    rotate(this.angle);
+      
+    if(this.thrust){      
+      image(this.shipImage.get(this.shipImage.width / 2, 0, this.shipImage.width / 2, this.shipImage.height), 0, 0);
+    }else{
+      image(this.shipImage.get(0, 0, this.shipImage.width / 2, this.shipImage.height), 0, 0);      
+    }
+    
+    popMatrix();
+    imageMode(CORNER);
+  }
+  
+  
+  boolean update(){
+        
+    //Position Update
+    this.pos[0] = (this.pos[0] + this.vel[0] + width) % width;
+    this.pos[1] = (this.pos[1] + this.vel[1] + height) % height;
+     
+    //Angle Update
+    this.angle += this.angleVel;
+     
+    //Velocity Update - Acceleration in direction of forward vector
+    float[] forwardVector = angleToVector(this.angle);
+    if(this.thrust){
+      this.vel[0] += forwardVector[0] * VEL_CONSTANT;
+      this.vel[1] += forwardVector[1] * VEL_CONSTANT;
+    }      
+    //Friction Update
+    this.vel[0] *= (1 - FRICTION_CONSTANT);
+    this.vel[1] *= (1 - FRICTION_CONSTANT);
+
+    return true;    
+  }
+   
+  void incAngularVel(){
+    this.angleVel += ANGULAR_VEL_OFFSET;
+  }
+
+  void decAngularVel(){
+    this.angleVel -= ANGULAR_VEL_OFFSET;
+  }
+  
+  void setThrust(boolean thrust){
+    this.thrust = thrust;
+  
+    if(this.thrust){
+      thrustSound.play();
+    }else{
+      thrustSound.stop();
+    }
+  }   
+  
+  
+  void shoot(){
+    
+    float[] forward = angleToVector(this.angle);
+    float[] missilePos = new float[]{this.pos[0] + this.radius * forward[0], this.pos[1] + this.radius * forward[1]};
+    float[] missileVel = new float[]{this.vel[0] + MISSILE_VEL_CONSTANT * forward[0], this.vel[1] + MISSILE_VEL_CONSTANT * forward[1]};       
+        
+    missileGroup.add(new Sprite(missilePos, missileVel, this.angle, (float)0, missileImage, missileInfo, missilePlayer));
+
+  }
+
+}
+
+//Sprite class
+class Sprite{
+  
+  int[] startCoordinate, imageSize;
+  int radius, lifespan, age;
+  float[] pos, vel;
+  float angleVel, angle;
+  boolean animated;
+  PImage image;
+  
+  Sprite(float[] pos, float[] vel, float angle, float angleVel, PImage image, ImageInfo info, AudioPlayer sound){
+    this.pos = pos;
+    this.vel = vel;
+    this.angle = angle;
+    this.angleVel = angleVel;
+    this.image = image;
+    this.startCoordinate = info.getStartCoordinate();
+    this.imageSize = info.getSize();
+    this.radius = info.getRadius();
+    this.lifespan = info.getLifespan();
+    this.animated = info.getAnimated();
+    this.age = 0;
+    if(sound != null){
+      sound.cue(0);
+      sound.play();
+    }
+  }
+  
+  Sprite(float[] pos, float[] vel, float angle, float angleVel, PImage image, ImageInfo info){
+    this(pos, vel, angle, angleVel, image, info, null);
+  }
+  
+    
+  float[] getPosition(){
+    return this.pos;
+  }
+
+  int getRadius(){
+    return this.radius; 
+  }   
+
+  void draw(){
+    if(this.animated){
+
+      int[] explosionIndex = new int[]{this.age % EXPLOSION_DIM[0], ((int)(this.age / EXPLOSION_DIM[0])) % EXPLOSION_DIM[1]};      
+      int[] explostionImageFragment = new int[]{explosionIndex[0] * EXPLOSION_SIZE[0], 0};
+      imageMode(CENTER);
+      image(explosionImage.get(explostionImageFragment[0], explostionImageFragment[1], EXPLOSION_SIZE[0], EXPLOSION_SIZE[1]), this.pos[0], this.pos[1]);
+      imageMode(CORNER);
+      
+    }else{
+      
+      imageMode(CENTER); 
+      pushMatrix();
+      translate(pos[0], pos[1]);
+      rotate(this.angle);
+      image(this.image, 0, 0);
+      popMatrix();
+      imageMode(CORNER); 
+    }
+  }
+  
+  
+  boolean update(){       
+      //Position Update
+      this.pos[0] = (this.pos[0] + this.vel[0]) % width;
+      this.pos[1] = (this.pos[1] + this.vel[1]) % height;
+   
+      //Angle Update
+      this.angle += this.angleVel;     
+      
+      //Age Update
+      this.age += 1;
+      if(this.age >= this.lifespan)
+          return true;
+      else
+          return false;
+  }
+  boolean collide(Sprite otherObject){
+      float[] thisPos = this.getPosition();
+      float[] otherPos = otherObject.getPosition();
+      double distance = calculateDistance(thisPos, otherPos);
+      
+      if(distance < this.getRadius() + otherObject.getRadius())
+          return true;
+      else
+          return false;
+  }
 }
 
 
