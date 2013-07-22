@@ -1,5 +1,5 @@
-/* Final Project for Creative Programming for Digital Media & Mobile Apps course - Coursera
-   A port of RiceRocks miniproject from An Introduction to Interactive Programming in Python course.
+/* Final Project for "Creative Programming for Digital Media & Mobile Apps" course - Coursera
+   A port of RiceRocks miniproject from "An Introduction to Interactive Programming in Python" course.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,15 +107,19 @@ void setup() {
   scoreTextImage = loadImage("score-text.png");
   
   maxim = new Maxim(this);
-
+  
+  //Sound file from: http://www.freesound.org/people/alaupas/sounds/178173/
   soundtrack = maxim.loadFile("soundtrack.wav");    
   
+  //Sound file from: http://www.freesound.org/people/Robinhood76/sounds/131626/
   missilePlayer = maxim.loadFile("missile.wav");
   missilePlayer.setLooping(false);
   
+  //Sound file from: http://www.freesound.org/people/EcoDTR/sounds/36846/
   explosionSound = maxim.loadFile("explosion.wav");  
   explosionSound.setLooping(false);
   
+  //Sound file from: http://www.freesound.org/people/primeval_polypod/sounds/158894/
   thrustSound = maxim.loadFile("thrust.wav");
   
   myShip = new Ship(new float[]{width / 2, height / 2}, new float[]{0, 0}, 0, shipImage, shipInfo);
